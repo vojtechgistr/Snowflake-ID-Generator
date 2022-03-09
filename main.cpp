@@ -2,14 +2,18 @@
 #include <string>
 #include <chrono>
 #include <time.h>
+#include <vector>
 #include <array>
+#include <algorithm>
+#include <map>
 
 using namespace std;
 
 class Snowflake {
-    public:
-    // uint64_t *lastSnowflakeID;
+    vector<uint64_t> lastSnowflakeID;
     uint64_t epoch = 1420070400000;
+    
+    public:
     uint64_t create() {
         uint64_t timestamp = chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count();
         string timeSinceEpoch = toBinary(timestamp - epoch);
@@ -22,11 +26,13 @@ class Snowflake {
         while(increment.length() != 12) increment = "0" + increment;
 
         uint64_t finalID = toDecimal(timeSinceEpoch + internalWorkerID + internalProcessID + increment);
-        // while(finalID == *lastSnowflakeID) {
-        //     finalID += 1;
-        // }
-
-        // *lastSnowflakeID = finalID;
+        
+        while(find(lastSnowflakeID.begin(), lastSnowflakeID.end(), finalID) != lastSnowflakeID.end()) {
+            finalID += 1;
+        }
+        
+        if(lastSnowflakeID.size() == 999) lastSnowflakeID.clear();
+        lastSnowflakeID.push_back(finalID);
         return finalID;
     };
 
@@ -38,7 +44,24 @@ class Snowflake {
             to_string(timestamp),
             ctime(&timestampToDate)
             };
-    }
+    };
+    
+    map<string, string> fetch(uint64_t id) {
+        map<string, string> userData;
+
+        /**
+        HERE YOU CAN CHECK IF THE SPECIFIED ID IS IN THE DATABASE
+        AND INSERT THE USER'S DATA INTO "userData" (or custom) VARIABLE
+        **/
+        
+        userData.insert(pair<string, string>("name", "value"));
+        userData.insert(pair<string, string>("example", "value"));
+        return userData;
+    };
+    
+    map<string, string> get(uint64_t id) {
+        return fetch(id);
+    };
 
     private:
     uint64_t toDecimal(string n) {
@@ -57,10 +80,17 @@ class Snowflake {
 };
 
 int main() {
-    Snowflake snowflake;
-    uint64_t generatedSnowflake = snowflake.create();
-
+    Snowflake id;
+    cout << "Here you can see, that every generated ID is unique: \n";
+    cout << id.create() << endl;
+    cout << id.create() << endl;
+    cout << id.create() << endl;
+    cout << id.create() << endl;
+    cout << id.create() << endl << endl << "Conversion: \n";
+    
+    uint64_t generatedSnowflake = id.create();
     cout << "Generated Snowflake ID: " << generatedSnowflake << endl;
-    cout << "This snowflake was created at [TIMESTAMP]: " << snowflake.createdAt(generatedSnowflake)[0] << endl;
-    cout << "This snowflake was created at [DATE]: " << snowflake.createdAt(generatedSnowflake)[1] << endl;
+    cout << "This snowflake was created at [TIMESTAMP]: " << id.createdAt(generatedSnowflake)[0] << endl;
+    cout << "This snowflake was created at [DATE]: " << id.createdAt(generatedSnowflake)[1] << endl;
+    cout << "Snowflake ID name: " << id.fetch(generatedSnowflake)["name"];
 }
